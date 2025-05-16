@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Граффити-стена</title>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #wall {
+            background-color: white;
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            cursor: crosshair;
+        }
+        .graffiti {
+            position: absolute;
+            max-width: 300px;
+            word-wrap: break-word;
+            user-select: none;
+            cursor: move;
+            padding: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        #saveBtn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 10000;
+            padding: 10px 15px;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="wall"></div>
+    <button id="saveBtn">Сохранить стену</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const wall = document.getElementById('wall');
+            let wallWidth = window.innerWidth;
+            let wallHeight = window.innerHeight;
+            let graffitiCount = 0;
+            const maxGraffitiSize = 300;
+            const minGraffitiSize = 50;
+            const colors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#000000'];
+            const fonts = ['Arial', 'Verdana', 'Courier', 'Impact', 'Comic Sans MS'];
+            let currentGraffiti = null;
+            let isDragging = false;
+            let offsetX, offsetY;
+            
+            // Добавление граффити
+            wall.addEventListener('click', function(e) {
+                if (isDragging) return;
+                
+                const text = prompt('Что вы хотите написать на стене?', 'Ваш текст здесь');
+                if (!text) return;
+                
+                const graffiti = document.createElement('div');
+                graffiti.className = 'graffiti';
+                
+                const size = Math.max(minGraffitiSize, Math.min(maxGraffitiSize, text.length * 10));
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const rotation = Math.floor(Math.random() * 30) - 15;
+                
+                graffiti.textContent = text;
+                graffiti.style.color = color;
+                graffiti.style.fontSize = `${size / text.length}px`;
+                graffiti.style.fontFamily = fonts[Math.floor(Math.random() * fonts.length)];
+                graffiti.style.transform = `rotate(${rotation}deg)`;
+                graffiti.style.left = `${e.clientX - size/2}px`;
+                graffiti.style.top = `${e.clientY - size/2}px`;
+                graffiti.style.width = `${size}px`;
+                
+                wall.appendChild(graffiti);
+                graffitiCount++;
+                
+                // Увеличиваем стену каждые 5 граффити
+                if (graffitiCount % 5 === 0) {
+                    wallWidth += 100;
+                    wallHeight += 100;
+                    wall.style.width = `${wallWidth}px`;
+                    wall.style.height = `${wallHeight}px`;
+                }
+                
+                // Перетаскивание
+                graffiti.addEventListener('mousedown', function(e) {
+                    if (e.target !== graffiti) return;
+                    isDragging = true;
+                    currentGraffiti = graffiti;
+                    offsetX = e.clientX - graffiti.getBoundingClientRect().left;
+                    offsetY = e.clientY - graffiti.getBoundingClientRect().top;
+                    graffiti.style.zIndex = 1000;
+                    e.preventDefault();
+                });
+            });
+            
+            // Движение при перетаскивании
+            document.addEventListener('mousemove', function(e) {
+                if (!isDragging || !currentGraffiti) return;
+                currentGraffiti.style.left = `${e.clientX - offsetX}px`;
+                currentGraffiti.style.top = `${e.clientY - offsetY}px`;
+            });
+            
+            // Конец перетаскивания
+            document.addEventListener('mouseup', function() {
+                isDragging = false;
+                if (currentGraffiti) {
+                    currentGraffiti.style.zIndex = 0;
+                    currentGraffiti = null;
+                }
+            });
+            
+            // Сохранение стены
+            document.getElementById('saveBtn').addEventListener('click', function() {
+                html2canvas(wall).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'graffiti-wall.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
+            });
+            
+            // Реакция на изменение размера окна
+            window.addEventListener('resize', function() {
+                wallWidth = Math.max(wallWidth, window.innerWidth);
+                wallHeight = Math.max(wallHeight, window.innerHeight);
+                wall.style.width = `${wallWidth}px`;
+                wall.style.height = `${wallHeight}px`;
+            });
+        });
+    </script>
+</body>
+</html>
